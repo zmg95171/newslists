@@ -1,6 +1,6 @@
 import type { NextConfig } from "next";
 
-const nextConfig: NextConfig = {
+const nextConfig = {
   /* config options here */
   eslint: {
     // Temporarily ignore ESLint during builds due to flat config compatibility issues
