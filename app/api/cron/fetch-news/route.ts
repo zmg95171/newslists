@@ -162,8 +162,10 @@ export async function GET(request: Request) {
             // Filter: Filter out duplicates
 
             // Filter: Check minimum content length
-            // Fallback to title if content/description is empty to ensure we process something
-            const originalText = item.content || item.description || item.title || "";
+            // Strategy: Pick the longest available text to maximize context (and pass the length filter)
+            // This handles cases where 'description' is a short "Read more" stub but 'title' is long and descriptive.
+            const candidates = [item.content, item.description, item.title].filter((s: any) => s && typeof s === 'string');
+            const originalText = candidates.sort((a: any, b: any) => b.length - a.length)[0] || "";
 
             if (originalText.length < minContentLength) {
                 console.log(`Skipping article "${item.title.substring(0, 20)}...": Content length ${originalText.length} < ${minContentLength}`);
