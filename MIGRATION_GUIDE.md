@@ -143,7 +143,32 @@ If you want to access the site on port 80 (standard HTTP) instead of 3000.
     sudo ln -s /etc/nginx/sites-available/english-news /etc/nginx/sites-enabled/
     sudo rm /etc/nginx/sites-enabled/default  # Remove default site if needed
     sudo nginx -t
-    sudo systemctl restart nginx
+
+## 9. Automating Daily News Fetch (Cron)
+
+Since you are running locally (not on Vercel), `vercel.json` cron jobs will NOT run automatically. You need to use Linux's built-in `crontab`.
+
+1.  **Open Crontab:**
+    ```bash
+    crontab -e
     ```
 
-Now you can access via `http://YOUR_SERVER_IP`.
+2.  **Add a Daily Schedule:**
+    Add the following line to the bottom of the file to run the fetch script every day at 8:00 AM.
+    
+    *Replace `your_random_secret_key_here` with the `CRON_SECRET` from your `.env.local` file.*
+
+    ```bash
+    # Run fetch-news API every day at 8:00 AM
+    0 8 * * * curl -X GET "http://localhost:3000/api/cron/fetch-news?secret=your_random_secret_key_here" >> /home/YOUR_USERNAME/cron_news.log 2>&1
+    ```
+
+3.  **Save and Exit:**
+    -   If using nano: `Ctrl+O` -> `Enter` -> `Ctrl+X`.
+
+4.  **Verify:**
+    ```bash
+    crontab -l
+    ```
+
+Now your server will automatically fetch and generate new articles every morning!
