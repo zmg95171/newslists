@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { revalidatePath } from 'next/cache';
 import dbConnect from '@/lib/mongodb';
 import Article from '@/models/Article';
 
@@ -95,7 +96,8 @@ async function processWithLLM(text: string, title: string) {
 export async function GET(request: Request) {
     // Security: Check for CRON secret if configured
     const cronSecret = process.env.CRON_SECRET;
-    if (cronSecret) {
+    // Allow local development to bypass this check
+    if (cronSecret && process.env.NODE_ENV !== 'development') {
         const { searchParams } = new URL(request.url);
         const providedSecret = searchParams.get('secret');
         if (providedSecret !== cronSecret) {
@@ -129,6 +131,7 @@ export async function GET(request: Request) {
 
         const newsData = await newsResponse.json();
         const results = newsData.results || [];
+        console.log(`Fetched ${results.length} articles from NewsData API`);
 
         let processedCount = 0;
         let skippedCount = 0;
@@ -156,9 +159,14 @@ export async function GET(request: Request) {
                 continue;
             }
 
+            // Filter: Filter out duplicates
+
             // Filter: Check minimum content length
-            const originalText = item.content || item.description || "";
+            // Fallback to title if content/description is empty to ensure we process something
+            const originalText = item.content || item.description || item.title || "";
+
             if (originalText.length < minContentLength) {
+                console.log(`Skipping article "${item.title.substring(0, 20)}...": Content length ${originalText.length} < ${minContentLength}`);
                 skippedReasons['too_short']++;
                 skippedCount++;
                 continue;
@@ -187,6 +195,11 @@ export async function GET(request: Request) {
             }
         }
 
+        console.log("Fetch Summary:", { processed: processedCount, skipped: skippedCount, reasons: skippedReasons });
+
+        // Trigger revalidation of the home page
+        revalidatePath('/');
+
         return NextResponse.json({
             success: true,
             message: `Processed ${processedCount} new articles`,
@@ -194,6 +207,11 @@ export async function GET(request: Request) {
             processed: processedCount,
             skipped: skippedCount,
             skippedReasons,
+            debug_skippedItems: skippedCount > 0 ? results.slice(0, 3).map((i: any) => ({
+                title: i.title,
+                contentLen: (i.content || i.description || i.title || "").length,
+                hasImage: !!i.image_url
+            })) : undefined,
             configuration: {
                 requireImage,
                 minContentLength,

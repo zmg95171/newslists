@@ -1,4 +1,5 @@
 import { NewsCard } from '@/components/NewsCard';
+import { RefreshNewsButton } from '@/components/RefreshNewsButton';
 import dbConnect from '@/lib/mongodb';
 import Article, { IArticle } from '@/models/Article';
 import { Newspaper } from 'lucide-react';
@@ -100,10 +101,7 @@ export default async function Home() {
             </p>
           </div>
           <div className="flex gap-2">
-            <button className="px-5 py-2.5 rounded-full bg-white dark:bg-slate-800 shadow-sm border border-slate-200 dark:border-slate-700 font-medium hover:shadow-md transition-all flex items-center gap-2">
-              <Newspaper size={18} />
-              Latest Updates
-            </button>
+            <RefreshNewsButton />
           </div>
         </header>
 
